@@ -63,11 +63,10 @@ const fields: Record<FormField['type'], React.FC<CommonFieldProps>> = {
 }
 
 function InputField({ name, type }: CommonFieldProps & { type?: 'number' }) {
-  const fieldValue = useStoreMap({
+  const field = useStoreMap({
     store: model.$formFields,
     keys: [name],
-    fn: (fields, [name]) => fields.map.get(name)?.value,
-    defaultValue: '',
+    fn: (fields, [name]) => fields.map.get(name),
   })
   const error = useStoreMap({
     store: model.$formErrors,
@@ -76,14 +75,17 @@ function InputField({ name, type }: CommonFieldProps & { type?: 'number' }) {
   })
 
   return (
-    <Input
-      value={fieldValue}
-      onChange={(evt) => {
-        model.fieldChanged({ name, value: evt.currentTarget.value })
-      }}
-      isInvalid={Boolean(error)}
-      type={type}
-    />
+    <div className="space-y-2">
+      <Input
+        value={field?.value ?? ''}
+        onChange={(evt) => {
+          model.fieldChanged({ name, value: evt.currentTarget.value })
+        }}
+        isInvalid={Boolean(error)}
+        type={type}
+      />
+      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+    </div>
   )
 }
 
@@ -102,17 +104,20 @@ function SelectField({ name }: CommonFieldProps) {
   const selectValue = typeof field?.value === 'string' ? field.value : null
 
   return (
-    <Select
-      value={selectValue}
-      options={field?.options ?? []}
-      onChange={(option) => {
-        if (option) {
-          model.fieldChanged({ name, value: option.value })
-        }
-      }}
-      isInvalid={Boolean(error)}
-      className="min-w-56"
-    />
+    <div className="space-y-2">
+      <Select
+        value={selectValue}
+        options={field?.options ?? []}
+        onChange={(option) => {
+          if (option) {
+            model.fieldChanged({ name, value: option.value })
+          }
+        }}
+        isInvalid={Boolean(error)}
+        className="min-w-56"
+      />
+      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+    </div>
   )
 }
 
@@ -193,7 +198,7 @@ function MultipleCheckBoxField({ name }: CommonFieldProps) {
   const allValues = Array.isArray(field?.value) ? field.value : []
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3">
       <div className="flex flex-col flex-wrap max-h-60 gap-5 gap-x-20">
         {options.map(({ label, value }) => {
           const isChecked = allValues.includes(value)
@@ -216,6 +221,8 @@ function MultipleCheckBoxField({ name }: CommonFieldProps) {
           labelClassName="font-bold"
         />
       </div>
+
+      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
 
       {error && <span className="text-body-short text-red-500">{error}</span>}
     </div>
