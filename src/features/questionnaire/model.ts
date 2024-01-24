@@ -189,7 +189,8 @@ sample({
 
 sample({
   clock: validateFieldsFx.doneData,
-  fn: (fieldsMap) => {
-    console.log('Form validated', fieldsMap)
+  fn: ({ fieldsMap }) => {
+    const fields = Array.from(fieldsMap.values())
+    console.log('Form validated', fields)
   },
 })
