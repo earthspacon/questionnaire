@@ -23,8 +23,8 @@ export default function Home() {
 function Form() {
   const formFields = useUnit(model.$staticFormFields)
 
-  const onSubmit = (evt: React.FormEvent) => {
-    evt.preventDefault()
+  const onSubmit = (event: React.FormEvent) => {
+    event.preventDefault()
     model.submitFormClicked()
   }
 
