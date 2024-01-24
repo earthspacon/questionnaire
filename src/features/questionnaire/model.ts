@@ -28,7 +28,7 @@ export const submitFormClicked = createEvent()
 
 const validateFieldsFx = createEffect<
   Map<string, FormField>,
-  Map<string, FormField>,
+  { fieldsMap: Map<string, FormField>; errorsMap: Map<string, string> },
   Map<string, string>
 >((fieldsMap) => {
   const errorsMap = new Map<string, string>()
@@ -42,7 +42,7 @@ const validateFieldsFx = createEffect<
   })
 
   if (Array.from(errorsMap.values()).every((error) => !error)) {
-    return fieldsMap
+    return { fieldsMap, errorsMap }
   }
 
   throw errorsMap
@@ -183,13 +183,7 @@ sample({
 
 sample({
   clock: validateFieldsFx.doneData,
-  source: $formErrors,
-  fn: (errors) => {
-    errors.map.forEach((_, name) => {
-      errors.map.set(name, '')
-    })
-    return { map: errors.map }
-  },
+  fn: ({ errorsMap }) => ({ map: errorsMap }),
   target: $formErrors,
 })
 
