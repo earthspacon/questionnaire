@@ -62,7 +62,7 @@ const fields: Record<FormField['type'], React.FC<CommonFieldProps>> = {
   'multiple-input': MultipleTextField,
 }
 
-function InputField({ name }: CommonFieldProps & { type?: 'number' }) {
+function InputField({ name, type }: CommonFieldProps & { type?: 'number' }) {
   const fieldValue = useStoreMap({
     store: model.$formFields,
     keys: [name],
@@ -82,6 +82,7 @@ function InputField({ name }: CommonFieldProps & { type?: 'number' }) {
         model.fieldChanged({ name, value: evt.currentTarget.value })
       }}
       isInvalid={Boolean(error)}
+      type={type}
     />
   )
 }
