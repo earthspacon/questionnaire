@@ -1,5 +1,9 @@
 import { Questionnaire } from '@/features/questionnaire'
 
 export default function Home() {
-  return <Questionnaire.View.Form />
+  return (
+    <main className="w-full h-full min-h-screen">
+      <Questionnaire.View.Form />
+    </main>
+  )
 }
