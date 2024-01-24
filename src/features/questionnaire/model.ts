@@ -139,7 +139,7 @@ sample({
     const field = fields.map.get(payload.name)
     if (!field) return null
 
-    const allValues = Array.isArray(field.value) ? [...field.value] : []
+    const allValues = Array.isArray(field.value) ? [...field.value] : ['']
     allValues.push('')
 
     return {

@@ -18,6 +18,13 @@ export const formFieldsMock: FormField[] = [
     placeholder: 'Введите ваше имя',
   },
   {
+    type: 'text',
+    name: 'surname',
+    label: 'Фамилия',
+    required: true,
+    placeholder: 'Введите вашу фамилию',
+  },
+  {
     type: 'number',
     name: 'age',
     label: 'Возраст',
@@ -33,6 +40,39 @@ export const formFieldsMock: FormField[] = [
       { value: 'single', label: 'Не женат/Не замужем' },
     ],
     required: true,
+  },
+  {
+    type: 'multiple-checkbox',
+    label: 'Владение иностранными языками',
+    name: 'languages',
+    required: true,
+    helperText: 'Отметьте языки, которыми вы владеете',
+    options: [
+      {
+        label: 'Английский',
+        value: 'english',
+      },
+      {
+        label: 'Немецкий',
+        value: 'german',
+      },
+      {
+        label: 'Французский',
+        value: 'french',
+      },
+      {
+        label: 'Испанский',
+        value: 'spanish',
+      },
+      {
+        label: 'Итальянский',
+        value: 'italian',
+      },
+      {
+        label: 'Китайский',
+        value: 'chinese',
+      },
+    ],
   },
   {
     type: 'multiple-input',
@@ -54,6 +94,19 @@ export const formFieldsMock: FormField[] = [
       { value: 'volgograd', label: 'Волгоград' },
     ],
     required: false,
+  },
+  {
+    type: 'select',
+    name: 'current_city',
+    label: 'Город проживания',
+    options: [
+      { value: 'any', label: 'Не важно' },
+      { value: 'moscow', label: 'Москва' },
+      { value: 'piter', label: 'Санкт-Петербург' },
+      { value: 'volgograd', label: 'Волгоград' },
+    ],
+    required: true,
+    placeholder: 'Выберите город',
   },
   {
     type: 'multiple-checkbox',
@@ -99,5 +152,13 @@ export const formFieldsMock: FormField[] = [
         value: 'driving',
       },
     ],
+  },
+  {
+    type: 'multiple-input',
+    label: 'Дополнительные навыки',
+    name: 'additional_skills',
+    required: true,
+    placeholder: 'Например, владение Photoshop',
+    helperText: 'Укажите дополнительные навыки',
   },
 ]

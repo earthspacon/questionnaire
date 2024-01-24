@@ -9,13 +9,14 @@ export type SelectProps = {
   options: Option[]
   value: string | null
   onChange?: (option: Option | null) => void
+  placeholder?: string
   className?: string
   isInvalid?: boolean
   isDisabled?: boolean
 }
 
 export const Select = (props: SelectProps) => {
-  const { className, options, value, isInvalid, isDisabled, onChange } = props
+  const { className, options, value, isInvalid, isDisabled, onChange, placeholder } = props
   const optionsRecord = useMemo(() => {
     return options?.reduce((acc, item) => {
       acc[item.value] = item
@@ -35,7 +36,9 @@ export const Select = (props: SelectProps) => {
               className
             )}
           >
-            <span className="block truncate">{selected?.label}</span>
+            <span className={cn('block truncate', { 'text-gray-400': !selected?.label })}>
+              {selected?.label ?? placeholder}
+            </span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
               <ChevronDownIcon
                 className={cn('h-5 w-5 text-gray-400', { 'rotate-180': open })}

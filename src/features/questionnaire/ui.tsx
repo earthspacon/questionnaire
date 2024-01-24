@@ -82,6 +82,7 @@ function InputField({ name, type }: CommonFieldProps & { type?: 'number' }) {
           model.fieldChanged({ name, value: evt.currentTarget.value })
         }}
         isInvalid={Boolean(error)}
+        placeholder={field?.placeholder}
         type={type}
       />
       {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
@@ -113,6 +114,7 @@ function SelectField({ name }: CommonFieldProps) {
             model.fieldChanged({ name, value: option.value })
           }
         }}
+        placeholder={field?.placeholder}
         isInvalid={Boolean(error)}
         className="min-w-56"
       />
