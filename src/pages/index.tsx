@@ -1,118 +1,230 @@
-import Image from "next/image";
-import { Inter } from "next/font/google";
+import { useStoreMap, useUnit } from 'effector-react'
 
-const inter = Inter({ subsets: ["latin"] });
+import { Checkbox } from '@/shared/ui/checkbox'
+import { Input } from '@/shared/ui/input'
+import { Select } from '@/shared/ui/select'
+
+import { FormField } from './config'
+import * as model from './model'
+
+type CommonFieldProps = { name: string }
 
 export default function Home() {
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between p-24 ${inter.className}`}
-    >
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/pages/index.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+    <main className="w-full h-full min-h-screen">
+      <div className="flex flex-col gap-10 p-10">
+        <h1 className="text-5xl">Анкета</h1>
+        <Form />
+      </div>
+    </main>
+  )
+}
+
+function Form() {
+  const formFields = useUnit(model.$staticFormFields)
+
+  const onSubmit = (evt: React.FormEvent) => {
+    evt.preventDefault()
+    model.submitFormClicked()
+  }
+
+  return (
+    <form className="flex flex-col gap-10" onSubmit={onSubmit}>
+      {formFields.map(([name, field]) => {
+        const Field = fields[field.type]
+
+        return (
+          <div key={name} className="flex gap-5">
+            <label htmlFor={name} className="w-full max-w-56 text-lg">
+              {field.label}
+              {field.required && <span className="text-red-500">&#42;</span>}
+            </label>
+            <Field name={name} />
+          </div>
+        )
+      })}
+
+      <SubmitButton />
+    </form>
+  )
+}
+
+function SubmitButton() {
+  return (
+    <div className="w-full flex  justify-center">
+      <button
+        type="submit"
+        className="bg-amber-500 text-white text-lg font-bold p-2 rounded-md hover:bg-amber-700"
+      >
+        Отправить
+      </button>
+    </div>
+  )
+}
+
+const fields: Record<FormField['type'], React.FC<CommonFieldProps>> = {
+  text: InputField,
+  number: (props) => <InputField {...props} type="number" />,
+  select: SelectField,
+  'multiple-checkbox': MultipleCheckBoxField,
+  'multiple-input': MultipleTextField,
+}
+
+function InputField({ name }: CommonFieldProps & { type?: 'number' }) {
+  const fieldValue = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: (fields, [name]) => fields.map.get(name)?.value,
+    defaultValue: '',
+  })
+  const error = useStoreMap({
+    store: model.$formErrors,
+    keys: [name],
+    fn: (errors, [name]) => errors.map.get(name),
+  })
+
+  return (
+    <Input
+      value={fieldValue}
+      onChange={(evt) => {
+        model.fieldChanged({ name, value: evt.currentTarget.value })
+      }}
+      isInvalid={Boolean(error)}
+    />
+  )
+}
+
+function SelectField({ name }: CommonFieldProps) {
+  const field = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: (fields, [name]) => fields.map.get(name),
+  })
+  const error = useStoreMap({
+    store: model.$formErrors,
+    keys: [name],
+    fn: (errors, [name]) => errors.map.get(name),
+  })
+
+  const selectValue = typeof field?.value === 'string' ? field.value : null
+
+  return (
+    <Select
+      value={selectValue}
+      options={field?.options ?? []}
+      onChange={(option) => {
+        if (option) {
+          model.fieldChanged({ name, value: option.value })
+        }
+      }}
+      isInvalid={Boolean(error)}
+      className="min-w-56"
+    />
+  )
+}
+
+function MultipleTextField({ name }: CommonFieldProps) {
+  const field = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: (fields, [name]) => fields.map.get(name),
+  })
+  const error = useStoreMap({
+    store: model.$formErrors,
+    keys: [name],
+    fn: (errors, [name]) => errors.map.get(name),
+  })
+
+  const allValues = Array.isArray(field?.value) ? field.value : ['']
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-5">
+        {allValues.map((value, index) => (
+          <div key={index} className="flex gap-5 items-center">
+            <Input
+              value={value}
+              onChange={(evt) => {
+                model.multipleTextInputFieldChanged({
+                  name,
+                  value: evt.currentTarget.value,
+                  index,
+                })
+              }}
+              isInvalid={Boolean(error)}
+              placeholder={field?.placeholder}
             />
-          </a>
-        </div>
+            {index === 0 ? (
+              <button
+                type="button"
+                onClick={() => {
+                  model.addInputToMultipleInputField({ name })
+                }}
+                className="text-lg"
+              >
+                Добавить ещё
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  model.removeInputFromMultipleInputField({ name, index })
+                }}
+                className="text-red-500 text-lg"
+              >
+                Удалить
+              </button>
+            )}
+          </div>
+        ))}
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-full sm:before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-full sm:after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700/10 after:dark:from-sky-900 after:dark:via-[#0141ff]/40 before:lg:h-[360px]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+    </div>
+  )
+}
+
+function MultipleCheckBoxField({ name }: CommonFieldProps) {
+  const field = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: (fields, [name]) => fields.map.get(name),
+  })
+  const error = useStoreMap({
+    store: model.$formErrors,
+    keys: [name],
+    fn: (errors, [name]) => errors.map.get(name),
+  })
+
+  const options = field?.options ?? []
+  const allValues = Array.isArray(field?.value) ? field.value : []
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-col flex-wrap max-h-60 gap-5 gap-x-20">
+        {options.map(({ label, value }) => {
+          const isChecked = allValues.includes(value)
+
+          return (
+            <Checkbox
+              key={value}
+              label={label}
+              value={isChecked}
+              onChange={(checked) => {
+                model.multipleCheckboxFieldChanged({ name, checked, value })
+              }}
+            />
+          )
+        })}
+
+        <Checkbox
+          label="Выделить все"
+          onChange={(checked) => model.toggleAllMultipleCheckbox({ name, checked })}
+          labelClassName="font-bold"
         />
       </div>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Discover and deploy boilerplate example Next.js&nbsp;projects.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{" "}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50 text-balance`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  );
+      {error && <span className="text-body-short text-red-500">{error}</span>}
+    </div>
+  )
 }
