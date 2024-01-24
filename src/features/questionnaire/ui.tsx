@@ -9,18 +9,7 @@ import * as model from './model'
 
 type CommonFieldProps = { name: string }
 
-export default function Home() {
-  return (
-    <main className="w-full h-full min-h-screen">
-      <div className="flex flex-col gap-10 p-10">
-        <h1 className="text-5xl">Анкета</h1>
-        <Form />
-      </div>
-    </main>
-  )
-}
-
-function Form() {
+export function Form() {
   const formFields = useUnit(model.$staticFormFields)
 
   const onSubmit = (event: React.FormEvent) => {
@@ -29,23 +18,26 @@ function Form() {
   }
 
   return (
-    <form className="flex flex-col gap-10" onSubmit={onSubmit}>
-      {formFields.map(([name, field]) => {
-        const Field = fields[field.type]
+    <div className="flex flex-col gap-10 p-10">
+      <h1 className="text-5xl">Анкета</h1>
+      <form className="flex flex-col gap-10" onSubmit={onSubmit}>
+        {formFields.map(([name, field]) => {
+          const Field = fields[field.type]
 
-        return (
-          <div key={name} className="flex gap-5">
-            <label htmlFor={name} className="w-full max-w-56 text-lg">
-              {field.label}
-              {field.required && <span className="text-red-500">&#42;</span>}
-            </label>
-            <Field name={name} />
-          </div>
-        )
-      })}
+          return (
+            <div key={name} className="flex gap-5">
+              <label htmlFor={name} className="w-full max-w-56 text-lg">
+                {field.label}
+                {field.required && <span className="text-red-500">&#42;</span>}
+              </label>
+              <Field name={name} />
+            </div>
+          )
+        })}
 
-      <SubmitButton />
-    </form>
+        <SubmitButton />
+      </form>
+    </div>
   )
 }
 

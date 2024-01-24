@@ -1,4 +1,4 @@
-import { createEvent, createStore, sample } from 'effector'
+import { createEffect, createEvent, createStore, sample } from 'effector'
 
 import { FormField, formFieldsMock } from './config'
 
@@ -25,6 +25,28 @@ export const toggleAllMultipleCheckbox = createEvent<{ name: string; checked: bo
 export const addInputToMultipleInputField = createEvent<{ name: string }>()
 export const removeInputFromMultipleInputField = createEvent<{ name: string; index: number }>()
 export const submitFormClicked = createEvent()
+
+const validateFieldsFx = createEffect<
+  Map<string, FormField>,
+  Map<string, FormField>,
+  Map<string, string>
+>((fieldsMap) => {
+  const errorsMap = new Map<string, string>()
+
+  fieldsMap.forEach((field, name) => {
+    if (field.required && !field.value) {
+      errorsMap.set(name, 'Поле обязательно для заполнения')
+    } else {
+      errorsMap.set(name, '')
+    }
+  })
+
+  if (Array.from(errorsMap.values()).every((error) => !error)) {
+    return fieldsMap
+  }
+
+  throw errorsMap
+})
 
 sample({
   clock: changeFormField,
@@ -148,16 +170,32 @@ sample({
 
 sample({
   clock: submitFormClicked,
-  source: { fields: $formFields, errors: $formErrors },
-  fn: ({ fields, errors }) => {
-    fields.map.forEach((field, name) => {
-      if (field.required && !field.value) {
-        errors.map.set(name, 'Поле обязательно для заполнения')
-      } else {
-        errors.map.set(name, '')
-      }
+  source: $formFields,
+  fn: ({ map }) => map,
+  target: validateFieldsFx,
+})
+
+sample({
+  clock: validateFieldsFx.failData,
+  fn: (errorsMap) => ({ map: errorsMap }),
+  target: $formErrors,
+})
+
+sample({
+  clock: validateFieldsFx.doneData,
+  source: $formErrors,
+  fn: (errors) => {
+    errors.map.forEach((_, name) => {
+      errors.map.set(name, '')
     })
     return { map: errors.map }
   },
   target: $formErrors,
+})
+
+sample({
+  clock: validateFieldsFx.doneData,
+  fn: (fieldsMap) => {
+    console.log('Form validated', fieldsMap)
+  },
 })
