@@ -28,24 +28,34 @@ export const submitFormClicked = createEvent()
 
 const validateFieldsFx = createEffect<
   Map<string, FormField>,
-  { fieldsMap: Map<string, FormField>; errorsMap: Map<string, string> },
+  Map<string, FormField>,
   Map<string, string>
 >((fieldsMap) => {
   const errorsMap = new Map<string, string>()
 
   fieldsMap.forEach((field, name) => {
-    if (field.required && !field.value) {
+    if (!field.required) return
+
+    const isNotValidValue = [undefined, null, ''].includes(field.value as string)
+    const isEmptyArray = Array.isArray(field.value) && field.value.length === 0
+    const isNotValidArray =
+      Array.isArray(field.value) &&
+      field.value.every((value) => [undefined, null, ''].includes(value))
+
+    const isNotValid = isNotValidValue || isEmptyArray || isNotValidArray
+
+    if (isNotValid) {
       errorsMap.set(name, 'Поле обязательно для заполнения')
     } else {
       errorsMap.set(name, '')
     }
   })
 
-  if (Array.from(errorsMap.values()).every((error) => !error)) {
-    return { fieldsMap, errorsMap }
+  if (Array.from(errorsMap.values()).some(Boolean)) {
+    throw errorsMap
   }
 
-  throw errorsMap
+  return fieldsMap
 })
 
 sample({
@@ -183,13 +193,17 @@ sample({
 
 sample({
   clock: validateFieldsFx.doneData,
-  fn: ({ errorsMap }) => ({ map: errorsMap }),
+  source: $formErrors,
+  fn: ({ map }) => {
+    map.forEach((_, name) => map.set(name, ''))
+    return { map }
+  },
   target: $formErrors,
 })
 
 sample({
   clock: validateFieldsFx.doneData,
-  fn: ({ fieldsMap }) => {
+  fn: (fieldsMap) => {
     const fields = Array.from(fieldsMap.values())
     console.log('Form validated', fields)
   },

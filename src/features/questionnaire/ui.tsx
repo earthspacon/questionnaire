@@ -85,7 +85,7 @@ function InputField({ name, type }: CommonFieldProps & { type?: 'number' }) {
         placeholder={field?.placeholder}
         type={type}
       />
-      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+      <HelperText name={name} />
     </div>
   )
 }
@@ -118,104 +118,103 @@ function SelectField({ name }: CommonFieldProps) {
         isInvalid={Boolean(error)}
         className="min-w-56"
       />
-      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+      <HelperText name={name} />
     </div>
   )
 }
 
 function MultipleTextField({ name }: CommonFieldProps) {
-  const field = useStoreMap({
+  const inputsCount = useStoreMap({
     store: model.$formFields,
     keys: [name],
-    fn: (fields, [name]) => fields.map.get(name),
+    fn: (fields, [name]) => {
+      const field = fields.map.get(name)
+      if (!Array.isArray(field?.value)) return 1
+      return field.value.length
+    },
   })
-  const error = useStoreMap({
-    store: model.$formErrors,
-    keys: [name],
-    fn: (errors, [name]) => errors.map.get(name),
-  })
-
-  const allValues = Array.isArray(field?.value) ? field.value : ['']
+  const inputs = Array.from({ length: inputsCount })
 
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-col gap-5">
-        {allValues.map((value, index) => (
-          <div key={index} className="flex gap-5 items-center">
-            <Input
-              value={value}
-              onChange={(evt) => {
-                model.multipleTextInputFieldChanged({
-                  name,
-                  value: evt.currentTarget.value,
-                  index,
-                })
-              }}
-              isInvalid={Boolean(error)}
-              placeholder={field?.placeholder}
-            />
-            {index === 0 ? (
-              <button
-                type="button"
-                onClick={() => {
-                  model.addInputToMultipleInputField({ name })
-                }}
-                className="text-lg"
-              >
-                Добавить ещё
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  model.removeInputFromMultipleInputField({ name, index })
-                }}
-                className="text-red-500 text-lg"
-              >
-                Удалить
-              </button>
-            )}
-          </div>
+        {inputs.map((_, index) => (
+          <MultipleTextFieldItem key={index} name={name} index={index} />
         ))}
       </div>
 
-      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
+      <HelperText name={name} />
+    </div>
+  )
+}
+
+function MultipleTextFieldItem({ name, index }: CommonFieldProps & { index: number }) {
+  const value = useStoreMap({
+    store: model.$formFields,
+    keys: [name, index],
+    fn: (fields, [name, index]) => {
+      const field = fields.map.get(name)
+      if (!Array.isArray(field?.value)) return ''
+      return field.value[index]
+    },
+  })
+  const placeholder = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: ({ map }, [name]) => map.get(name)?.placeholder,
+  })
+  const hasError = useStoreMap({
+    store: model.$formErrors,
+    keys: [name, index],
+    fn: (errors, [name, index]) => Boolean(errors.map.get(name)) && index === 0,
+  })
+
+  return (
+    <div className="flex gap-5 items-center">
+      <Input
+        value={value}
+        onChange={(evt) => {
+          model.multipleTextInputFieldChanged({ name, value: evt.currentTarget.value, index })
+        }}
+        isInvalid={hasError}
+        placeholder={placeholder}
+      />
+      {index === 0 ? (
+        <button
+          type="button"
+          onClick={() => model.addInputToMultipleInputField({ name })}
+          className="text-lg"
+        >
+          Добавить ещё
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => model.removeInputFromMultipleInputField({ name, index })}
+          className="text-red-500 text-lg"
+        >
+          Удалить
+        </button>
+      )}
     </div>
   )
 }
 
 function MultipleCheckBoxField({ name }: CommonFieldProps) {
-  const field = useStoreMap({
+  const options = useStoreMap({
     store: model.$formFields,
     keys: [name],
-    fn: (fields, [name]) => fields.map.get(name),
-  })
-  const error = useStoreMap({
-    store: model.$formErrors,
-    keys: [name],
-    fn: (errors, [name]) => errors.map.get(name),
+    fn: (fields, [name]) => fields.map.get(name)?.options,
   })
 
-  const options = field?.options ?? []
-  const allValues = Array.isArray(field?.value) ? field.value : []
+  if (!options) return null
 
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col flex-wrap max-h-60 gap-5 gap-x-20">
-        {options.map(({ label, value }) => {
-          const isChecked = allValues.includes(value)
-
-          return (
-            <Checkbox
-              key={value}
-              label={label}
-              value={isChecked}
-              onChange={(checked) => {
-                model.multipleCheckboxFieldChanged({ name, checked, value })
-              }}
-            />
-          )
-        })}
+        {options.map(({ label, value }) => (
+          <MultipleCheckboxFieldItem key={value} name={name} value={value} label={label} />
+        ))}
 
         <Checkbox
           label="Выделить все"
@@ -223,10 +222,56 @@ function MultipleCheckBoxField({ name }: CommonFieldProps) {
           labelClassName="font-bold"
         />
       </div>
-
-      {field?.helperText && <p className="text-gray-500 text-sm">{field.helperText}</p>}
-
-      {error && <span className="text-body-short text-red-500">{error}</span>}
+      <HelperText name={name} />
+      <ErrorText name={name} />
     </div>
   )
+}
+
+function MultipleCheckboxFieldItem({
+  name,
+  value,
+  label,
+}: CommonFieldProps & { value: string; label: string }) {
+  const isChecked = useStoreMap({
+    store: model.$formFields,
+    keys: [name, value],
+    fn: (fields, [name, optionValue]) => {
+      const field = fields.map.get(name)
+      if (!Array.isArray(field?.value)) return false
+      return field.value.includes(optionValue)
+    },
+  })
+
+  return (
+    <Checkbox
+      label={label}
+      value={isChecked}
+      onChange={(checked) => {
+        model.multipleCheckboxFieldChanged({ name, checked, value })
+      }}
+    />
+  )
+}
+
+function ErrorText({ name }: CommonFieldProps) {
+  const error = useStoreMap({
+    store: model.$formErrors,
+    keys: [name],
+    fn: (errors, [name]) => errors.map.get(name),
+    defaultValue: null,
+  })
+
+  return error ? <span className="text-body-short text-red-500">{error}</span> : null
+}
+
+function HelperText({ name }: CommonFieldProps) {
+  const helperText = useStoreMap({
+    store: model.$formFields,
+    keys: [name],
+    fn: ({ map }, [name]) => map.get(name)?.helperText,
+    defaultValue: null,
+  })
+
+  return helperText ? <p className="text-gray-500 text-sm">{helperText}</p> : null
 }
